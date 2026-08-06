@@ -220,6 +220,55 @@
           <span class="success-pill">Cleaned</span>
         </div>
 
+        <div class="processing-summary" id="processingSummary">
+          <div>
+            <span class="processing-summary-label">Processing summary</span>
+            <p id="processingSummaryText">
+              Your cleanup details will appear here.
+            </p>
+          </div>
+        </div>
+
+        <div class="comparison-grid">
+          <div class="comparison-card">
+            <span class="comparison-label">Rows</span>
+            <div class="comparison-values">
+              <strong id="originalRowCount">0</strong>
+              <span>→</span>
+              <strong id="cleanedRowCount">0</strong>
+            </div>
+            <small>original to cleaned</small>
+          </div>
+
+          <div class="comparison-card">
+            <span class="comparison-label">Columns</span>
+            <div class="comparison-values">
+              <strong id="originalColumnCount">0</strong>
+              <span>→</span>
+              <strong id="cleanedColumnCount">0</strong>
+            </div>
+            <small>original to cleaned</small>
+          </div>
+
+          <div class="comparison-card">
+            <span class="comparison-label">Missing cells</span>
+            <div class="comparison-values">
+              <strong id="originalMissingCount">0</strong>
+              <span>→</span>
+              <strong id="cleanedMissingCount">0</strong>
+            </div>
+            <small>before and after cleanup</small>
+          </div>
+
+          <div class="comparison-card">
+            <span class="comparison-label">Issue reduction</span>
+            <div class="comparison-values">
+              <strong id="issueReduction">0%</strong>
+            </div>
+            <small>fewer detected issues</small>
+          </div>
+        </div>
+
         <div class="stats-grid">
           <div class="stat">
             <span id="rowsRemoved">0</span>

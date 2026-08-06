@@ -198,7 +198,13 @@ function clearActivePreset() {
 }
 
 function updateSelectAllLabel() {
-  updateSelectAllLabel();
+  const allSelected = optionIds.every(
+    (id) => document.getElementById(id).checked
+  );
+
+  selectAllButton.textContent = allSelected
+    ? "Clear all"
+    : "Select all";
 }
 
 function applyCleanupPreset(presetName) {
@@ -558,6 +564,20 @@ function cleanCsv() {
     rows[0] = makeUniqueHeaders(rows[0]);
   }
 
+  const includedControls = columnControls.filter(
+    (control) => control.include
+  );
+
+  rows = rows.map((row, rowIndex) =>
+    includedControls.map((control) => {
+      if (rowIndex === 0) {
+        return control.name;
+      }
+
+      return row[control.index] ?? "";
+    })
+  );
+
   if (settings.removeEmptyColumns && rows.length) {
     const indexesToKeep = rows[0].map((_, columnIndex) => columnIndex).filter(
       (columnIndex) =>
@@ -574,20 +594,6 @@ function cleanCsv() {
     columnsRemoved = rows[0].length - indexesToKeep.length;
     rows = rows.map((row) => indexesToKeep.map((index) => row[index] ?? ""));
   }
-
-  const includedControls = columnControls.filter(
-    (control) => control.include
-  );
-
-  rows = rows.map((row, rowIndex) =>
-    includedControls.map((control) => {
-      if (rowIndex === 0) {
-        return control.name;
-      }
-
-      return row[control.index] ?? "";
-    })
-  );
 
   if (settings.removeDuplicates && rows.length > 1) {
     const header = rows[0];
@@ -721,11 +727,17 @@ function cleanCsv() {
     ? presetLabels[activePresetButton.dataset.preset]
     : "Custom rules";
 
-  document.getElementById("processingSummaryText").textContent =
-    `${delimiterLabels[detectedDelimiter] || detectedDelimiter} delimiter · ` +
-    `${presetLabel} · ${enabledRuleCount} cleanup rules · ` +
-    `${originalSummary.dataRows} × ${originalSummary.columns} to ` +
-    `${cleanedDataRowCount} × ${cleanedColumnCount}`;
+  const processingSummaryText = document.getElementById(
+    "processingSummaryText"
+  );
+
+  if (processingSummaryText) {
+    processingSummaryText.textContent =
+      `${delimiterLabels[detectedDelimiter] || detectedDelimiter} delimiter · ` +
+      `${presetLabel} · ${enabledRuleCount} cleanup rules · ` +
+      `${originalSummary.dataRows} × ${originalSummary.columns} to ` +
+      `${cleanedDataRowCount} × ${cleanedColumnCount}`;
+  }
 
   document.getElementById("rowsRemoved").textContent = totalRowsRemoved.toLocaleString();
   document.getElementById("duplicatesRemoved").textContent = duplicatesRemoved.toLocaleString();
