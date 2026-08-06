@@ -108,6 +108,7 @@ async function loadFile(file) {
       `Delimiter: ${delimiterNames[delimiter] || delimiter}`;
 
     updateQualityReport(rows);
+    renderColumnControls(rows[0]);
 
     dropZone.classList.add("hidden");
     fileSummary.classList.remove("hidden");
@@ -245,11 +246,104 @@ function renderColumnDiagnostics(columns) {
   });
 }
 
+function renderColumnControls(headers) {
+  const list = document.getElementById("columnControlsList");
+  const error = document.getElementById("columnControlsError");
+
+  list.innerHTML = "";
+  error.textContent = "";
+  error.classList.add("hidden");
+
+  headers.forEach((header, index) => {
+    const row = document.createElement("div");
+    row.className = "column-control-row";
+    row.dataset.columnIndex = index;
+
+    const toggleLabel = document.createElement("label");
+    toggleLabel.className = "column-toggle";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "column-include";
+    checkbox.checked = true;
+
+    const toggleText = document.createElement("span");
+    toggleText.textContent = "Include";
+
+    toggleLabel.append(checkbox, toggleText);
+
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.className = "column-name-input";
+    nameInput.value = header || `Column ${index + 1}`;
+    nameInput.setAttribute(
+      "aria-label",
+      `Rename column ${index + 1}`
+    );
+
+    checkbox.addEventListener("change", () => {
+      nameInput.disabled = !checkbox.checked;
+      row.classList.toggle("excluded", !checkbox.checked);
+    });
+
+    row.append(toggleLabel, nameInput);
+    list.appendChild(row);
+  });
+}
+
+function getColumnControls() {
+  const rows = [
+    ...document.querySelectorAll(".column-control-row"),
+  ];
+
+  const controls = rows.map((row) => ({
+    index: Number(row.dataset.columnIndex),
+    include: row.querySelector(".column-include").checked,
+    name: row.querySelector(".column-name-input").value.trim(),
+  }));
+
+  const included = controls.filter((control) => control.include);
+  const error = document.getElementById("columnControlsError");
+
+  if (!included.length) {
+    error.textContent = "Include at least one column.";
+    error.classList.remove("hidden");
+    return null;
+  }
+
+  if (included.some((control) => control.name === "")) {
+    error.textContent = "Included columns must have a name.";
+    error.classList.remove("hidden");
+    return null;
+  }
+
+  const normalizedNames = included.map((control) =>
+    control.name.toLowerCase()
+  );
+
+  if (new Set(normalizedNames).size !== normalizedNames.length) {
+    error.textContent = "Column names must be unique.";
+    error.classList.remove("hidden");
+    return null;
+  }
+
+  error.textContent = "";
+  error.classList.add("hidden");
+
+  return controls;
+}
+
 function cleanCsv() {
   clearError();
 
   if (!originalRows.length) {
     showError("Choose a CSV file first.");
+    return;
+  }
+
+  const columnControls = getColumnControls();
+
+  if (!columnControls) {
     return;
   }
 
@@ -308,6 +402,20 @@ function cleanCsv() {
     columnsRemoved = rows[0].length - indexesToKeep.length;
     rows = rows.map((row) => indexesToKeep.map((index) => row[index] ?? ""));
   }
+
+  const includedControls = columnControls.filter(
+    (control) => control.include
+  );
+
+  rows = rows.map((row, rowIndex) =>
+    includedControls.map((control) => {
+      if (rowIndex === 0) {
+        return control.name;
+      }
+
+      return row[control.index] ?? "";
+    })
+  );
 
   if (settings.removeDuplicates && rows.length > 1) {
     const header = rows[0];
