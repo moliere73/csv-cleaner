@@ -412,7 +412,89 @@ function cleanCsv() {
   cleanedCsv = rows.map((row) => row.map(escapeCsvCell).join(",")).join(lineBreak);
 
   const cleanedDataRowCount = Math.max(rows.length - 1, 0);
+  const cleanedColumnCount = rows.length ? rows[0].length : 0;
   const totalRowsRemoved = originalDataRowCount - cleanedDataRowCount;
+
+  const cleanedDataRows = rows.slice(1);
+
+  const cleanedMissingCells = cleanedDataRows.reduce(
+    (total, row) =>
+      total + row.filter((cell) => (cell || "").trim() === "").length,
+    0
+  );
+
+  const cleanedEmptyRows = cleanedDataRows.filter((row) =>
+    row.every((cell) => (cell || "").trim() === "")
+  ).length;
+
+  const cleanedEmptyColumns = rows.length
+    ? rows[0].filter((_, columnIndex) =>
+        cleanedDataRows.every(
+          (row) => (row[columnIndex] || "").trim() === ""
+        )
+      ).length
+    : 0;
+
+  const cleanedSeen = new Set();
+  let cleanedDuplicateRows = 0;
+
+  cleanedDataRows.forEach((row) => {
+    const key = JSON.stringify(row.map((cell) => (cell || "").trim()));
+
+    if (cleanedSeen.has(key)) {
+      cleanedDuplicateRows += 1;
+    } else {
+      cleanedSeen.add(key);
+    }
+  });
+
+  const originalSummary = qualityReport?.summary || {
+    dataRows: originalDataRowCount,
+    columns: maxColumns,
+    missingCells: 0,
+    duplicateRows: 0,
+    emptyRows: 0,
+    emptyColumns: 0,
+  };
+
+  const originalIssueCount =
+    originalSummary.missingCells +
+    originalSummary.duplicateRows +
+    originalSummary.emptyRows +
+    originalSummary.emptyColumns;
+
+  const cleanedIssueCount =
+    cleanedMissingCells +
+    cleanedDuplicateRows +
+    cleanedEmptyRows +
+    cleanedEmptyColumns;
+
+  const issueReduction =
+    originalIssueCount === 0
+      ? 0
+      : Math.max(
+          0,
+          Math.round(
+            ((originalIssueCount - cleanedIssueCount) /
+              originalIssueCount) *
+              100
+          )
+        );
+
+  document.getElementById("originalRowCount").textContent =
+    originalSummary.dataRows.toLocaleString();
+  document.getElementById("cleanedRowCount").textContent =
+    cleanedDataRowCount.toLocaleString();
+  document.getElementById("originalColumnCount").textContent =
+    originalSummary.columns.toLocaleString();
+  document.getElementById("cleanedColumnCount").textContent =
+    cleanedColumnCount.toLocaleString();
+  document.getElementById("originalMissingCount").textContent =
+    originalSummary.missingCells.toLocaleString();
+  document.getElementById("cleanedMissingCount").textContent =
+    cleanedMissingCells.toLocaleString();
+  document.getElementById("issueReduction").textContent =
+    `${issueReduction}%`;
 
   document.getElementById("rowsRemoved").textContent = totalRowsRemoved.toLocaleString();
   document.getElementById("duplicatesRemoved").textContent = duplicatesRemoved.toLocaleString();
