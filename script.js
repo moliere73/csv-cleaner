@@ -9,6 +9,7 @@ const resultsCard = document.getElementById("resultsCard");
 const errorMessage = document.getElementById("errorMessage");
 const cleanButton = document.getElementById("cleanButton");
 const downloadButton = document.getElementById("downloadButton");
+const exportReportButton = document.getElementById("exportReportButton");
 const selectAllButton = document.getElementById("selectAllButton");
 
 const optionIds = [
@@ -24,6 +25,7 @@ let sourceFile = null;
 let originalRows = [];
 let cleanedRows = [];
 let cleanedCsv = "";
+let qualityReport = null;
 
 browseButton.addEventListener("click", () => fileInput.click());
 replaceButton.addEventListener("click", () => fileInput.click());
@@ -61,6 +63,7 @@ selectAllButton.addEventListener("click", () => {
 
 cleanButton.addEventListener("click", cleanCsv);
 downloadButton.addEventListener("click", downloadCsv);
+exportReportButton.addEventListener("click", downloadQualityReport);
 
 async function loadFile(file) {
   clearError();
@@ -198,19 +201,32 @@ function updateQualityReport(rows) {
   document.getElementById("emptyColumnsFound").textContent =
     emptyColumns.toLocaleString();
 
-  renderColumnDiagnostics(normalizedRows);
+  const columns = buildColumnDiagnostics(normalizedRows);
+
+  qualityReport = {
+    fileName: sourceFile ? sourceFile.name : null,
+    analyzedAt: new Date().toISOString(),
+    summary: {
+      dataRows: dataRows.length,
+      columns: maxColumns,
+      missingCells,
+      duplicateRows,
+      emptyRows,
+      emptyColumns,
+    },
+    columns,
+  };
+
+  renderColumnDiagnostics(columns);
 }
 
-function renderColumnDiagnostics(rows) {
-  const tableBody = document.querySelector("#diagnosticsTable tbody");
-  tableBody.innerHTML = "";
-
-  if (!rows.length) return;
+function buildColumnDiagnostics(rows) {
+  if (!rows.length) return [];
 
   const headers = rows[0];
   const dataRows = rows.slice(1);
 
-  headers.forEach((header, columnIndex) => {
+  return headers.map((header, columnIndex) => {
     const values = dataRows.map((row) => (row[columnIndex] || "").trim());
     const nonEmptyValues = values.filter((value) => value !== "");
     const missingCount = values.length - nonEmptyValues.length;
@@ -220,24 +236,39 @@ function renderColumnDiagnostics(rows) {
         ? 100
         : Math.round((nonEmptyValues.length / values.length) * 100);
 
+    return {
+      column: header || `Column ${columnIndex + 1}`,
+      missing: missingCount,
+      unique: uniqueCount,
+      completionPercent: completion,
+      likelyType: detectLikelyType(nonEmptyValues),
+    };
+  });
+}
+
+function renderColumnDiagnostics(columns) {
+  const tableBody = document.querySelector("#diagnosticsTable tbody");
+  tableBody.innerHTML = "";
+
+  columns.forEach((column) => {
     const row = document.createElement("tr");
 
     const columnCell = document.createElement("td");
-    columnCell.textContent = header || `Column ${columnIndex + 1}`;
+    columnCell.textContent = column.column;
 
     const missingCell = document.createElement("td");
-    missingCell.textContent = missingCount.toLocaleString();
+    missingCell.textContent = column.missing.toLocaleString();
 
     const uniqueCell = document.createElement("td");
-    uniqueCell.textContent = uniqueCount.toLocaleString();
+    uniqueCell.textContent = column.unique.toLocaleString();
 
     const completionCell = document.createElement("td");
-    completionCell.textContent = `${completion}%`;
+    completionCell.textContent = `${column.completionPercent}%`;
 
     const typeCell = document.createElement("td");
     const typePill = document.createElement("span");
     typePill.className = "type-pill";
-    typePill.textContent = detectLikelyType(nonEmptyValues);
+    typePill.textContent = column.likelyType;
     typeCell.appendChild(typePill);
 
     row.append(
@@ -456,6 +487,25 @@ function renderPreview(rows) {
     });
     tbody.appendChild(tr);
   });
+}
+
+function downloadQualityReport() {
+  if (!qualityReport || !sourceFile) return;
+
+  const reportJson = JSON.stringify(qualityReport, null, 2);
+  const blob = new Blob([reportJson], {
+    type: "application/json;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const originalName = sourceFile.name.replace(/\.csv$/i, "");
+
+  link.href = url;
+  link.download = `${originalName}-quality-report.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function downloadCsv() {

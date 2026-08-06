@@ -541,3 +541,20 @@ footer {
   font-size: 0.75rem;
   font-weight: 700;
 }
+
+.result-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 760px) {
+  .result-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .result-actions .secondary-button {
+    width: 100%;
+  }
+}
