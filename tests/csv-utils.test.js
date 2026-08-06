@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const {
+  detectDelimiter,
   parseCsv,
   makeUniqueHeaders,
   escapeCsvCell,
@@ -15,6 +16,34 @@ function test(name, callback) {
     throw error;
   }
 }
+
+test("detects common delimiters", () => {
+  assert.equal(detectDelimiter("name,age\nMeredith,22"), ",");
+  assert.equal(detectDelimiter("name;age\nMeredith;22"), ";");
+  assert.equal(detectDelimiter("name\tage\nMeredith\t22"), "\t");
+  assert.equal(detectDelimiter("name|age\nMeredith|22"), "|");
+});
+
+test("ignores delimiters inside quoted values", () => {
+  assert.equal(
+    detectDelimiter('name;notes\nMeredith;"Python, JavaScript"'),
+    ";"
+  );
+});
+
+test("parses semicolon-separated rows automatically", () => {
+  assert.deepEqual(parseCsv("name;age\nMeredith;22"), [
+    ["name", "age"],
+    ["Meredith", "22"],
+  ]);
+});
+
+test("parses tab-separated rows automatically", () => {
+  assert.deepEqual(parseCsv("name\tage\nMeredith\t22"), [
+    ["name", "age"],
+    ["Meredith", "22"],
+  ]);
+});
 
 test("parses ordinary CSV rows", () => {
   assert.deepEqual(parseCsv("name,age\nMeredith,22"), [

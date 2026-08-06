@@ -80,7 +80,8 @@ async function loadFile(file) {
 
   try {
     const text = await file.text();
-    const rows = parseCsv(text);
+    const delimiter = detectDelimiter(text);
+    const rows = parseCsv(text, delimiter);
 
     if (!rows.length || !rows.some((row) => row.some((cell) => cell.trim() !== ""))) {
       throw new Error("The file appears to be empty.");
@@ -95,6 +96,16 @@ async function loadFile(file) {
     document.getElementById("fileName").textContent = file.name;
     document.getElementById("fileMeta").textContent =
       `${Math.max(rows.length - 1, 0).toLocaleString()} rows · ${columns.toLocaleString()} columns`;
+
+    const delimiterNames = {
+      ",": "comma",
+      ";": "semicolon",
+      "\t": "tab",
+      "|": "pipe",
+    };
+
+    document.getElementById("delimiterMeta").textContent =
+      `Delimiter: ${delimiterNames[delimiter] || delimiter}`;
 
     updateQualityReport(rows);
 
