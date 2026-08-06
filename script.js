@@ -61,6 +61,7 @@ let originalRows = [];
 let cleanedRows = [];
 let cleanedCsv = "";
 let qualityReport = null;
+let detectedDelimiter = ",";
 
 browseButton.addEventListener("click", () => fileInput.click());
 replaceButton.addEventListener("click", () => fileInput.click());
@@ -241,6 +242,7 @@ async function loadFile(file) {
   try {
     const text = await file.text();
     const delimiter = detectDelimiter(text);
+    detectedDelimiter = delimiter;
     const rows = parseCsv(text, delimiter);
 
     if (!rows.length || !rows.some((row) => row.some((cell) => cell.trim() !== ""))) {
@@ -693,6 +695,37 @@ function cleanCsv() {
     cleanedMissingCells.toLocaleString();
   document.getElementById("issueReduction").textContent =
     `${issueReduction}%`;
+
+  const activePresetButton = presetButtons.find((button) =>
+    button.classList.contains("active")
+  );
+
+  const presetLabels = {
+    safe: "Safe cleanup",
+    formatting: "Formatting only",
+    aggressive: "Aggressive cleanup",
+  };
+
+  const delimiterLabels = {
+    ",": "comma",
+    ";": "semicolon",
+    "\t": "tab",
+    "|": "pipe",
+  };
+
+  const enabledRuleCount = optionIds.filter(
+    (id) => document.getElementById(id).checked
+  ).length;
+
+  const presetLabel = activePresetButton
+    ? presetLabels[activePresetButton.dataset.preset]
+    : "Custom rules";
+
+  document.getElementById("processingSummaryText").textContent =
+    `${delimiterLabels[detectedDelimiter] || detectedDelimiter} delimiter · ` +
+    `${presetLabel} · ${enabledRuleCount} cleanup rules · ` +
+    `${originalSummary.dataRows} × ${originalSummary.columns} to ` +
+    `${cleanedDataRowCount} × ${cleanedColumnCount}`;
 
   document.getElementById("rowsRemoved").textContent = totalRowsRemoved.toLocaleString();
   document.getElementById("duplicatesRemoved").textContent = duplicatesRemoved.toLocaleString();
