@@ -1,10 +1,10 @@
-\
 const fileInput = document.getElementById("fileInput");
 const browseButton = document.getElementById("browseButton");
 const replaceButton = document.getElementById("replaceButton");
 const dropZone = document.getElementById("dropZone");
 const fileSummary = document.getElementById("fileSummary");
 const controlsCard = document.getElementById("controlsCard");
+const qualityCard = document.getElementById("qualityCard");
 const resultsCard = document.getElementById("resultsCard");
 const errorMessage = document.getElementById("errorMessage");
 const cleanButton = document.getElementById("cleanButton");
@@ -93,8 +93,11 @@ async function loadFile(file) {
     document.getElementById("fileMeta").textContent =
       `${Math.max(rows.length - 1, 0).toLocaleString()} rows · ${columns.toLocaleString()} columns`;
 
+    updateQualityReport(rows);
+
     dropZone.classList.add("hidden");
     fileSummary.classList.remove("hidden");
+    qualityCard.classList.remove("hidden");
     controlsCard.classList.remove("hidden");
     resultsCard.classList.add("hidden");
   } catch (error) {
@@ -149,6 +152,51 @@ function parseCsv(text) {
   }
 
   return rows;
+}
+
+function updateQualityReport(rows) {
+  const maxColumns = Math.max(...rows.map((row) => row.length));
+  const normalizedRows = rows.map((row) => [
+    ...row,
+    ...Array(Math.max(0, maxColumns - row.length)).fill(""),
+  ]);
+
+  const dataRows = normalizedRows.slice(1);
+
+  const missingCells = dataRows.reduce(
+    (total, row) =>
+      total + row.filter((cell) => cell.trim() === "").length,
+    0
+  );
+
+  const emptyRows = dataRows.filter((row) =>
+    row.every((cell) => cell.trim() === "")
+  ).length;
+
+  const emptyColumns = normalizedRows[0].filter((_, columnIndex) =>
+    dataRows.every((row) => (row[columnIndex] || "").trim() === "")
+  ).length;
+
+  const seen = new Set();
+  let duplicateRows = 0;
+
+  dataRows.forEach((row) => {
+    const key = JSON.stringify(row.map((cell) => cell.trim()));
+    if (seen.has(key)) {
+      duplicateRows += 1;
+    } else {
+      seen.add(key);
+    }
+  });
+
+  document.getElementById("missingCells").textContent =
+    missingCells.toLocaleString();
+  document.getElementById("duplicateRowsFound").textContent =
+    duplicateRows.toLocaleString();
+  document.getElementById("emptyRowsFound").textContent =
+    emptyRows.toLocaleString();
+  document.getElementById("emptyColumnsFound").textContent =
+    emptyColumns.toLocaleString();
 }
 
 function cleanCsv() {

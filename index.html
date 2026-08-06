@@ -51,6 +51,38 @@
         <button class="text-button" id="replaceButton" type="button">Replace file</button>
       </div>
 
+      <div class="quality-card hidden" id="qualityCard">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Data quality</p>
+            <h2>Before cleaning</h2>
+          </div>
+          <span class="quality-pill">Analysis</span>
+        </div>
+
+        <div class="quality-grid">
+          <div class="quality-stat">
+            <span id="missingCells">0</span>
+            <small>missing cells</small>
+          </div>
+
+          <div class="quality-stat">
+            <span id="duplicateRowsFound">0</span>
+            <small>duplicate rows</small>
+          </div>
+
+          <div class="quality-stat">
+            <span id="emptyRowsFound">0</span>
+            <small>empty rows</small>
+          </div>
+
+          <div class="quality-stat">
+            <span id="emptyColumnsFound">0</span>
+            <small>empty columns</small>
+          </div>
+        </div>
+      </div>
+
       <div class="controls-card hidden" id="controlsCard">
         <div class="section-heading">
           <div>
