@@ -81,6 +81,30 @@
             <small>empty columns</small>
           </div>
         </div>
+
+        <div class="diagnostics-section">
+          <div class="diagnostics-heading">
+            <div>
+              <h3>Column diagnostics</h3>
+              <p>Review completeness, unique values, and likely data types.</p>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table id="diagnosticsTable">
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>Missing</th>
+                  <th>Unique</th>
+                  <th>Complete</th>
+                  <th>Likely type</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div class="controls-card hidden" id="controlsCard">

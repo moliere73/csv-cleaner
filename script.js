@@ -197,6 +197,101 @@ function updateQualityReport(rows) {
     emptyRows.toLocaleString();
   document.getElementById("emptyColumnsFound").textContent =
     emptyColumns.toLocaleString();
+
+  renderColumnDiagnostics(normalizedRows);
+}
+
+function renderColumnDiagnostics(rows) {
+  const tableBody = document.querySelector("#diagnosticsTable tbody");
+  tableBody.innerHTML = "";
+
+  if (!rows.length) return;
+
+  const headers = rows[0];
+  const dataRows = rows.slice(1);
+
+  headers.forEach((header, columnIndex) => {
+    const values = dataRows.map((row) => (row[columnIndex] || "").trim());
+    const nonEmptyValues = values.filter((value) => value !== "");
+    const missingCount = values.length - nonEmptyValues.length;
+    const uniqueCount = new Set(nonEmptyValues).size;
+    const completion =
+      values.length === 0
+        ? 100
+        : Math.round((nonEmptyValues.length / values.length) * 100);
+
+    const row = document.createElement("tr");
+
+    const columnCell = document.createElement("td");
+    columnCell.textContent = header || `Column ${columnIndex + 1}`;
+
+    const missingCell = document.createElement("td");
+    missingCell.textContent = missingCount.toLocaleString();
+
+    const uniqueCell = document.createElement("td");
+    uniqueCell.textContent = uniqueCount.toLocaleString();
+
+    const completionCell = document.createElement("td");
+    completionCell.textContent = `${completion}%`;
+
+    const typeCell = document.createElement("td");
+    const typePill = document.createElement("span");
+    typePill.className = "type-pill";
+    typePill.textContent = detectLikelyType(nonEmptyValues);
+    typeCell.appendChild(typePill);
+
+    row.append(
+      columnCell,
+      missingCell,
+      uniqueCell,
+      completionCell,
+      typeCell
+    );
+
+    tableBody.appendChild(row);
+  });
+}
+
+function detectLikelyType(values) {
+  if (!values.length) return "empty";
+
+  const normalized = values.map((value) => value.toLowerCase());
+
+  if (
+    normalized.every((value) =>
+      ["true", "false", "yes", "no"].includes(value)
+    )
+  ) {
+    return "boolean";
+  }
+
+  if (
+    values.every((value) => {
+      const cleaned = value.replace(/[$,%\s]/g, "");
+      return cleaned !== "" && !Number.isNaN(Number(cleaned));
+    })
+  ) {
+    return "number";
+  }
+
+  if (
+    values.every((value) => {
+      const timestamp = Date.parse(value);
+      return !Number.isNaN(timestamp);
+    })
+  ) {
+    return "date";
+  }
+
+  if (
+    values.every((value) =>
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+    )
+  ) {
+    return "email";
+  }
+
+  return "text";
 }
 
 function cleanCsv() {
