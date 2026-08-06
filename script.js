@@ -12,6 +12,7 @@ const downloadButton = document.getElementById("downloadButton");
 const exportReportButton = document.getElementById("exportReportButton");
 const selectAllButton = document.getElementById("selectAllButton");
 const resetColumnsButton = document.getElementById("resetColumnsButton");
+const restoreDefaultsButton = document.getElementById("restoreDefaultsButton");
 
 const optionIds = [
   "trimWhitespace",
@@ -118,6 +119,27 @@ cleanButton.addEventListener("click", cleanCsv);
 downloadButton.addEventListener("click", downloadCsv);
 exportReportButton.addEventListener("click", downloadQualityReport);
 resetColumnsButton.addEventListener("click", resetColumnControls);
+restoreDefaultsButton.addEventListener("click", restoreDefaultCleanupPreferences);
+
+function restoreDefaultCleanupPreferences() {
+  localStorage.removeItem(CLEANUP_PREFERENCES_KEY);
+
+  const defaultRules = {
+    trimWhitespace: true,
+    removeDuplicates: true,
+    standardizeHeaders: true,
+    removeEmptyColumns: true,
+    removeEmptyRows: true,
+    normalizeLineBreaks: true,
+  };
+
+  Object.entries(defaultRules).forEach(([id, checked]) => {
+    document.getElementById(id).checked = checked;
+  });
+
+  clearActivePreset();
+  updateSelectAllLabel();
+}
 
 function saveCleanupPreferences(activePreset) {
   const rules = Object.fromEntries(

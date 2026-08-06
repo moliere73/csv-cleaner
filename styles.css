@@ -713,3 +713,17 @@ footer {
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+.cleanup-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+@media (max-width: 560px) {
+  .cleanup-heading-actions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
