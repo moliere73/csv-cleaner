@@ -668,3 +668,17 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+.column-controls-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+@media (max-width: 560px) {
+  .column-controls-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

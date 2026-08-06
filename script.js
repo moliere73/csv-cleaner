@@ -11,6 +11,7 @@ const cleanButton = document.getElementById("cleanButton");
 const downloadButton = document.getElementById("downloadButton");
 const exportReportButton = document.getElementById("exportReportButton");
 const selectAllButton = document.getElementById("selectAllButton");
+const resetColumnsButton = document.getElementById("resetColumnsButton");
 
 const optionIds = [
   "trimWhitespace",
@@ -64,6 +65,7 @@ selectAllButton.addEventListener("click", () => {
 cleanButton.addEventListener("click", cleanCsv);
 downloadButton.addEventListener("click", downloadCsv);
 exportReportButton.addEventListener("click", downloadQualityReport);
+resetColumnsButton.addEventListener("click", resetColumnControls);
 
 async function loadFile(file) {
   clearError();
@@ -289,6 +291,16 @@ function renderColumnControls(headers) {
     row.append(toggleLabel, nameInput);
     list.appendChild(row);
   });
+}
+
+function resetColumnControls() {
+  if (!originalRows.length) return;
+
+  renderColumnControls(originalRows[0]);
+
+  const error = document.getElementById("columnControlsError");
+  error.textContent = "";
+  error.classList.add("hidden");
 }
 
 function getColumnControls() {
