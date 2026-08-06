@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="Clean CSV files in your browser by trimming whitespace, removing duplicates, standardizing headers, and dropping empty columns."
+  />
+  <title>ClearCSV — Clean messy CSV files</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="page-shell">
+    <nav class="nav">
+      <a class="brand" href="#" aria-label="ClearCSV home">
+        <span class="brand-mark">C</span>
+        <span>ClearCSV</span>
+      </a>
+      <span class="privacy-note">Runs entirely in your browser</span>
+    </nav>
+
+    <section class="hero">
+      <p class="eyebrow">A small data utility</p>
+      <h1>Turn messy CSV files into clean, usable data.</h1>
+      <p class="hero-copy">
+        Upload a file, choose your cleanup rules, preview the changes, and download a polished copy.
+        Your data never leaves your device.
+      </p>
+    </section>
+
+    <section class="workspace" aria-label="CSV cleaning workspace">
+      <div class="upload-card" id="dropZone">
+        <input type="file" id="fileInput" accept=".csv,text/csv" hidden />
+        <div class="upload-icon" aria-hidden="true">↑</div>
+        <h2>Drop a CSV file here</h2>
+        <p>or choose one from your computer</p>
+        <button class="primary-button" id="browseButton" type="button">Choose CSV</button>
+        <p class="file-limit">Recommended maximum: 10 MB</p>
+      </div>
+
+      <div class="file-summary hidden" id="fileSummary">
+        <div>
+          <p class="summary-label">Current file</p>
+          <h2 id="fileName">data.csv</h2>
+          <p id="fileMeta">0 rows · 0 columns</p>
+        </div>
+        <button class="text-button" id="replaceButton" type="button">Replace file</button>
+      </div>
+
+      <div class="controls-card hidden" id="controlsCard">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Cleanup rules</p>
+            <h2>Choose what to fix</h2>
+          </div>
+          <button class="text-button" id="selectAllButton" type="button">Select all</button>
+        </div>
+
+        <div class="rule-grid">
+          <label class="rule-card">
+            <input type="checkbox" id="trimWhitespace" checked />
+            <span class="custom-checkbox"></span>
+            <span>
+              <strong>Trim whitespace</strong>
+              <small>Remove extra spaces around every value.</small>
+            </span>
+          </label>
+
+          <label class="rule-card">
+            <input type="checkbox" id="removeDuplicates" checked />
+            <span class="custom-checkbox"></span>
+            <span>
+              <strong>Remove duplicate rows</strong>
+              <small>Keep the first occurrence of identical rows.</small>
+            </span>
+          </label>
+
+          <label class="rule-card">
+            <input type="checkbox" id="standardizeHeaders" checked />
+            <span class="custom-checkbox"></span>
+            <span>
+              <strong>Standardize headers</strong>
+              <small>Convert column names to readable snake_case.</small>
+            </span>
+          </label>
+
+          <label class="rule-card">
+            <input type="checkbox" id="removeEmptyColumns" checked />
+            <span class="custom-checkbox"></span>
+            <span>
+              <strong>Remove empty columns</strong>
+              <small>Delete columns with no values in any row.</small>
+            </span>
+          </label>
+
+          <label class="rule-card">
+            <input type="checkbox" id="removeEmptyRows" checked />
+            <span class="custom-checkbox"></span>
+            <span>
+              <strong>Remove empty rows</strong>
+              <small>Delete rows that contain no usable values.</small>
+            </span>
+          </label>
+
+          <label class="rule-card">
+            <input type="checkbox" id="normalizeLineBreaks" checked />
+            <span class="custom-checkbox"></span>
+            <span>
+              <strong>Normalize line breaks</strong>
+              <small>Export with consistent line endings.</small>
+            </span>
+          </label>
+        </div>
+
+        <button class="primary-button wide" id="cleanButton" type="button">Clean CSV</button>
+      </div>
+
+      <div class="results-card hidden" id="resultsCard">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Results</p>
+            <h2>Your file is ready</h2>
+          </div>
+          <span class="success-pill">Cleaned</span>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat">
+            <span id="rowsRemoved">0</span>
+            <small>rows removed</small>
+          </div>
+          <div class="stat">
+            <span id="duplicatesRemoved">0</span>
+            <small>duplicates removed</small>
+          </div>
+          <div class="stat">
+            <span id="columnsRemoved">0</span>
+            <small>columns removed</small>
+          </div>
+          <div class="stat">
+            <span id="cellsTrimmed">0</span>
+            <small>cells trimmed</small>
+          </div>
+        </div>
+
+        <div class="preview-header">
+          <div>
+            <h3>Preview</h3>
+            <p id="previewCaption">Showing the first 10 rows</p>
+          </div>
+          <button class="secondary-button" id="downloadButton" type="button">Download cleaned CSV</button>
+        </div>
+
+        <div class="table-wrap">
+          <table id="previewTable">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="error-message hidden" id="errorMessage" role="alert"></div>
+    </section>
+
+    <footer>
+      <p>Built for quick, private data cleanup.</p>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

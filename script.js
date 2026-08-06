@@ -1,0 +1,342 @@
+\
+const fileInput = document.getElementById("fileInput");
+const browseButton = document.getElementById("browseButton");
+const replaceButton = document.getElementById("replaceButton");
+const dropZone = document.getElementById("dropZone");
+const fileSummary = document.getElementById("fileSummary");
+const controlsCard = document.getElementById("controlsCard");
+const resultsCard = document.getElementById("resultsCard");
+const errorMessage = document.getElementById("errorMessage");
+const cleanButton = document.getElementById("cleanButton");
+const downloadButton = document.getElementById("downloadButton");
+const selectAllButton = document.getElementById("selectAllButton");
+
+const optionIds = [
+  "trimWhitespace",
+  "removeDuplicates",
+  "standardizeHeaders",
+  "removeEmptyColumns",
+  "removeEmptyRows",
+  "normalizeLineBreaks",
+];
+
+let sourceFile = null;
+let originalRows = [];
+let cleanedRows = [];
+let cleanedCsv = "";
+
+browseButton.addEventListener("click", () => fileInput.click());
+replaceButton.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", () => {
+  if (fileInput.files[0]) loadFile(fileInput.files[0]);
+});
+
+["dragenter", "dragover"].forEach((eventName) => {
+  dropZone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    dropZone.classList.add("dragging");
+  });
+});
+
+["dragleave", "drop"].forEach((eventName) => {
+  dropZone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    dropZone.classList.remove("dragging");
+  });
+});
+
+dropZone.addEventListener("drop", (event) => {
+  const file = event.dataTransfer.files[0];
+  if (file) loadFile(file);
+});
+
+selectAllButton.addEventListener("click", () => {
+  const checkboxes = optionIds.map((id) => document.getElementById(id));
+  const allSelected = checkboxes.every((checkbox) => checkbox.checked);
+  checkboxes.forEach((checkbox) => {
+    checkbox.checked = !allSelected;
+  });
+  selectAllButton.textContent = allSelected ? "Select all" : "Clear all";
+});
+
+cleanButton.addEventListener("click", cleanCsv);
+downloadButton.addEventListener("click", downloadCsv);
+
+async function loadFile(file) {
+  clearError();
+
+  if (!file.name.toLowerCase().endsWith(".csv")) {
+    showError("Please choose a .csv file.");
+    return;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    showError("This file is larger than 10 MB. Try a smaller CSV for the best browser performance.");
+    return;
+  }
+
+  try {
+    const text = await file.text();
+    const rows = parseCsv(text);
+
+    if (!rows.length || !rows.some((row) => row.some((cell) => cell.trim() !== ""))) {
+      throw new Error("The file appears to be empty.");
+    }
+
+    sourceFile = file;
+    originalRows = rows;
+    cleanedRows = [];
+    cleanedCsv = "";
+
+    const columns = Math.max(...rows.map((row) => row.length));
+    document.getElementById("fileName").textContent = file.name;
+    document.getElementById("fileMeta").textContent =
+      `${Math.max(rows.length - 1, 0).toLocaleString()} rows · ${columns.toLocaleString()} columns`;
+
+    dropZone.classList.add("hidden");
+    fileSummary.classList.remove("hidden");
+    controlsCard.classList.remove("hidden");
+    resultsCard.classList.add("hidden");
+  } catch (error) {
+    showError(error.message || "We could not read this CSV file.");
+  }
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let value = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (inQuotes) {
+      if (char === '"' && next === '"') {
+        value += '"';
+        i += 1;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        value += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = true;
+    } else if (char === ",") {
+      row.push(value);
+      value = "";
+    } else if (char === "\n") {
+      row.push(value.replace(/\r$/, ""));
+      rows.push(row);
+      row = [];
+      value = "";
+    } else {
+      value += char;
+    }
+  }
+
+  if (inQuotes) {
+    throw new Error("The CSV contains an unclosed quoted value.");
+  }
+
+  if (value.length > 0 || row.length > 0) {
+    row.push(value.replace(/\r$/, ""));
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function cleanCsv() {
+  clearError();
+
+  if (!originalRows.length) {
+    showError("Choose a CSV file first.");
+    return;
+  }
+
+  const settings = Object.fromEntries(
+    optionIds.map((id) => [id, document.getElementById(id).checked])
+  );
+
+  let rows = originalRows.map((row) => [...row]);
+  const originalDataRowCount = Math.max(rows.length - 1, 0);
+  let cellsTrimmed = 0;
+  let duplicatesRemoved = 0;
+  let emptyRowsRemoved = 0;
+  let columnsRemoved = 0;
+
+  const maxColumns = Math.max(...rows.map((row) => row.length));
+  rows = rows.map((row) => [
+    ...row,
+    ...Array(Math.max(0, maxColumns - row.length)).fill(""),
+  ]);
+
+  if (settings.trimWhitespace) {
+    rows = rows.map((row) =>
+      row.map((cell) => {
+        const trimmed = cell.trim();
+        if (trimmed !== cell) cellsTrimmed += 1;
+        return trimmed;
+      })
+    );
+  }
+
+  if (settings.removeEmptyRows) {
+    const header = rows[0];
+    const dataRows = rows.slice(1);
+    const filtered = dataRows.filter((row) => row.some((cell) => cell !== ""));
+    emptyRowsRemoved = dataRows.length - filtered.length;
+    rows = [header, ...filtered];
+  }
+
+  if (settings.standardizeHeaders && rows.length) {
+    rows[0] = makeUniqueHeaders(rows[0]);
+  }
+
+  if (settings.removeEmptyColumns && rows.length) {
+    const indexesToKeep = rows[0].map((_, columnIndex) => columnIndex).filter(
+      (columnIndex) =>
+        rows.some((row, rowIndex) => {
+          if (rowIndex === 0) return false;
+          return (row[columnIndex] || "").trim() !== "";
+        })
+    );
+
+    if (!indexesToKeep.length) {
+      indexesToKeep.push(...rows[0].map((_, index) => index));
+    }
+
+    columnsRemoved = rows[0].length - indexesToKeep.length;
+    rows = rows.map((row) => indexesToKeep.map((index) => row[index] ?? ""));
+  }
+
+  if (settings.removeDuplicates && rows.length > 1) {
+    const header = rows[0];
+    const seen = new Set();
+    const uniqueRows = [];
+
+    rows.slice(1).forEach((row) => {
+      const key = JSON.stringify(row);
+      if (seen.has(key)) {
+        duplicatesRemoved += 1;
+      } else {
+        seen.add(key);
+        uniqueRows.push(row);
+      }
+    });
+
+    rows = [header, ...uniqueRows];
+  }
+
+  cleanedRows = rows;
+  const lineBreak = settings.normalizeLineBreaks ? "\n" : detectLineBreak();
+  cleanedCsv = rows.map((row) => row.map(escapeCsvCell).join(",")).join(lineBreak);
+
+  const cleanedDataRowCount = Math.max(rows.length - 1, 0);
+  const totalRowsRemoved = originalDataRowCount - cleanedDataRowCount;
+
+  document.getElementById("rowsRemoved").textContent = totalRowsRemoved.toLocaleString();
+  document.getElementById("duplicatesRemoved").textContent = duplicatesRemoved.toLocaleString();
+  document.getElementById("columnsRemoved").textContent = columnsRemoved.toLocaleString();
+  document.getElementById("cellsTrimmed").textContent = cellsTrimmed.toLocaleString();
+  document.getElementById("previewCaption").textContent =
+    `Showing ${Math.min(cleanedDataRowCount, 10)} of ${cleanedDataRowCount.toLocaleString()} rows`;
+
+  renderPreview(rows);
+  resultsCard.classList.remove("hidden");
+  resultsCard.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function makeUniqueHeaders(headers) {
+  const counts = new Map();
+
+  return headers.map((header, index) => {
+    let normalized = header
+      .trim()
+      .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+      .replace(/[^a-zA-Z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .toLowerCase();
+
+    if (!normalized) normalized = `column_${index + 1}`;
+
+    const count = counts.get(normalized) || 0;
+    counts.set(normalized, count + 1);
+
+    return count === 0 ? normalized : `${normalized}_${count + 1}`;
+  });
+}
+
+function escapeCsvCell(value) {
+  const stringValue = String(value ?? "");
+  if (/[",\n\r]/.test(stringValue)) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+  return stringValue;
+}
+
+function detectLineBreak() {
+  return navigator.platform.toLowerCase().includes("win") ? "\r\n" : "\n";
+}
+
+function renderPreview(rows) {
+  const table = document.getElementById("previewTable");
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
+
+  if (!rows.length) return;
+
+  const headerRow = document.createElement("tr");
+  rows[0].forEach((header) => {
+    const th = document.createElement("th");
+    th.textContent = header;
+    th.title = header;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+
+  rows.slice(1, 11).forEach((row) => {
+    const tr = document.createElement("tr");
+    row.forEach((cell) => {
+      const td = document.createElement("td");
+      td.textContent = cell;
+      td.title = cell;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function downloadCsv() {
+  if (!cleanedCsv || !sourceFile) return;
+
+  const blob = new Blob([cleanedCsv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const originalName = sourceFile.name.replace(/\.csv$/i, "");
+
+  link.href = url;
+  link.download = `${originalName}-cleaned.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function showError(message) {
+  errorMessage.textContent = message;
+  errorMessage.classList.remove("hidden");
+}
+
+function clearError() {
+  errorMessage.textContent = "";
+  errorMessage.classList.add("hidden");
+}
