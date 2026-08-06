@@ -22,6 +22,37 @@ const optionIds = [
   "normalizeLineBreaks",
 ];
 
+const presetButtons = [
+  ...document.querySelectorAll(".preset-button"),
+];
+
+const cleanupPresets = {
+  safe: {
+    trimWhitespace: true,
+    removeDuplicates: false,
+    standardizeHeaders: true,
+    removeEmptyColumns: false,
+    removeEmptyRows: true,
+    normalizeLineBreaks: true,
+  },
+  formatting: {
+    trimWhitespace: true,
+    removeDuplicates: false,
+    standardizeHeaders: true,
+    removeEmptyColumns: false,
+    removeEmptyRows: false,
+    normalizeLineBreaks: true,
+  },
+  aggressive: {
+    trimWhitespace: true,
+    removeDuplicates: true,
+    standardizeHeaders: true,
+    removeEmptyColumns: true,
+    removeEmptyRows: true,
+    normalizeLineBreaks: true,
+  },
+};
+
 let sourceFile = null;
 let originalRows = [];
 let cleanedRows = [];
@@ -53,6 +84,12 @@ dropZone.addEventListener("drop", (event) => {
   if (file) loadFile(file);
 });
 
+presetButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    applyCleanupPreset(button.dataset.preset);
+  });
+});
+
 selectAllButton.addEventListener("click", () => {
   const checkboxes = optionIds.map((id) => document.getElementById(id));
   const allSelected = checkboxes.every((checkbox) => checkbox.checked);
@@ -66,6 +103,29 @@ cleanButton.addEventListener("click", cleanCsv);
 downloadButton.addEventListener("click", downloadCsv);
 exportReportButton.addEventListener("click", downloadQualityReport);
 resetColumnsButton.addEventListener("click", resetColumnControls);
+
+function applyCleanupPreset(presetName) {
+  const preset = cleanupPresets[presetName];
+
+  if (!preset) return;
+
+  Object.entries(preset).forEach(([optionId, checked]) => {
+    document.getElementById(optionId).checked = checked;
+  });
+
+  presetButtons.forEach((button) => {
+    button.classList.toggle(
+      "active",
+      button.dataset.preset === presetName
+    );
+  });
+
+  selectAllButton.textContent = optionIds.every(
+    (id) => document.getElementById(id).checked
+  )
+    ? "Clear all"
+    : "Select all";
+}
 
 async function loadFile(file) {
   clearError();
