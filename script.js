@@ -53,6 +53,8 @@ const cleanupPresets = {
   },
 };
 
+const CLEANUP_PREFERENCES_KEY = "clearcsv-cleanup-preferences";
+
 let sourceFile = null;
 let originalRows = [];
 let cleanedRows = [];
@@ -87,22 +89,94 @@ dropZone.addEventListener("drop", (event) => {
 presetButtons.forEach((button) => {
   button.addEventListener("click", () => {
     applyCleanupPreset(button.dataset.preset);
+    saveCleanupPreferences(button.dataset.preset);
+  });
+});
+
+optionIds.forEach((id) => {
+  document.getElementById(id).addEventListener("change", () => {
+    clearActivePreset();
+    saveCleanupPreferences(null);
+    updateSelectAllLabel();
   });
 });
 
 selectAllButton.addEventListener("click", () => {
   const checkboxes = optionIds.map((id) => document.getElementById(id));
   const allSelected = checkboxes.every((checkbox) => checkbox.checked);
+
   checkboxes.forEach((checkbox) => {
     checkbox.checked = !allSelected;
   });
-  selectAllButton.textContent = allSelected ? "Select all" : "Clear all";
+
+  clearActivePreset();
+  saveCleanupPreferences(null);
+  updateSelectAllLabel();
 });
 
 cleanButton.addEventListener("click", cleanCsv);
 downloadButton.addEventListener("click", downloadCsv);
 exportReportButton.addEventListener("click", downloadQualityReport);
 resetColumnsButton.addEventListener("click", resetColumnControls);
+
+function saveCleanupPreferences(activePreset) {
+  const rules = Object.fromEntries(
+    optionIds.map((id) => [
+      id,
+      document.getElementById(id).checked,
+    ])
+  );
+
+  localStorage.setItem(
+    CLEANUP_PREFERENCES_KEY,
+    JSON.stringify({
+      activePreset,
+      rules,
+    })
+  );
+}
+
+function loadCleanupPreferences() {
+  try {
+    const saved = localStorage.getItem(CLEANUP_PREFERENCES_KEY);
+
+    if (!saved) {
+      updateSelectAllLabel();
+      return;
+    }
+
+    const preferences = JSON.parse(saved);
+
+    optionIds.forEach((id) => {
+      if (typeof preferences.rules?.[id] === "boolean") {
+        document.getElementById(id).checked =
+          preferences.rules[id];
+      }
+    });
+
+    presetButtons.forEach((button) => {
+      button.classList.toggle(
+        "active",
+        button.dataset.preset === preferences.activePreset
+      );
+    });
+
+    updateSelectAllLabel();
+  } catch {
+    localStorage.removeItem(CLEANUP_PREFERENCES_KEY);
+    updateSelectAllLabel();
+  }
+}
+
+function clearActivePreset() {
+  presetButtons.forEach((button) => {
+    button.classList.remove("active");
+  });
+}
+
+function updateSelectAllLabel() {
+  updateSelectAllLabel();
+}
 
 function applyCleanupPreset(presetName) {
   const preset = cleanupPresets[presetName];
@@ -126,6 +200,8 @@ function applyCleanupPreset(presetName) {
     ? "Clear all"
     : "Select all";
 }
+
+loadCleanupPreferences();
 
 async function loadFile(file) {
   clearError();
