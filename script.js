@@ -232,6 +232,52 @@ function applyCleanupPreset(presetName) {
 
 loadCleanupPreferences();
 
+function formatFileSize(bytes) {
+  const mb = bytes / (1024 * 1024);
+
+  if (mb >= 1) {
+    return `${mb.toFixed(1)} MB`;
+  }
+
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function showLargeFileWarning(file) {
+  pendingLargeFile = file;
+
+  const fileSize = formatFileSize(file.size);
+
+  if (file.size >= 10 * 1024 * 1024) {
+    largeFileTitle.textContent = "This is a very large CSV";
+    largeFileMessage.textContent =
+      `${file.name} is ${fileSize}. Processing may temporarily slow down your browser.`;
+  } else {
+    largeFileTitle.textContent = "This CSV may take longer to process";
+    largeFileMessage.textContent =
+      `${file.name} is ${fileSize}. You can continue, but analysis may take a moment.`;
+  }
+
+  dropZone.classList.add("hidden");
+  largeFileCard.classList.remove("hidden");
+}
+
+function cancelLargeFile() {
+  pendingLargeFile = null;
+  fileInput.value = "";
+  largeFileCard.classList.add("hidden");
+  dropZone.classList.remove("hidden");
+}
+
+async function continueLargeFile() {
+  if (!pendingLargeFile) return;
+
+  const file = pendingLargeFile;
+  pendingLargeFile = null;
+  largeFileCard.classList.add("hidden");
+
+  await processFile(file);
+}
+
 function showProcessing(title, message) {
   processingTitle.textContent = title;
   processingMessage.textContent = message;
@@ -268,6 +314,17 @@ function resetApp() {
 }
 
 async function loadFile(file) {
+  clearError();
+
+  if (file.size >= 5 * 1024 * 1024) {
+    showLargeFileWarning(file);
+    return;
+  }
+
+  await processFile(file);
+}
+
+async function processFile(file) {
   clearError();
   setBusy(true);
 

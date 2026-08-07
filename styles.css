@@ -809,3 +809,45 @@ footer {
     flex-direction: column;
   }
 }
+
+.large-file-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow);
+}
+
+.large-file-card h2 {
+  margin-bottom: 6px;
+}
+
+.large-file-card p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.large-file-actions {
+  display: flex;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 700px) {
+  .large-file-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .large-file-actions {
+    width: 100%;
+  }
+
+  .large-file-actions button {
+    flex: 1;
+  }
+}

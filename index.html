@@ -42,6 +42,25 @@
         <p class="file-limit">Recommended maximum: 10 MB</p>
       </div>
 
+      <div class="large-file-card hidden" id="largeFileCard">
+        <div>
+          <p class="eyebrow">Large file</p>
+          <h2 id="largeFileTitle">This CSV may take longer to process</h2>
+          <p id="largeFileMessage">
+            You can continue, but the browser may be less responsive while the file is analyzed.
+          </p>
+        </div>
+
+        <div class="large-file-actions">
+          <button class="secondary-button" id="cancelLargeFileButton" type="button">
+            Cancel
+          </button>
+          <button class="primary-button" id="continueLargeFileButton" type="button">
+            Continue
+          </button>
+        </div>
+      </div>
+
       <div class="processing-card hidden" id="processingCard" aria-live="polite">
         <div class="processing-spinner" aria-hidden="true"></div>
 
