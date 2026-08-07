@@ -762,3 +762,50 @@ footer {
     flex-direction: column;
   }
 }
+
+.processing-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.processing-copy {
+  flex: 1;
+}
+
+.processing-copy h2 {
+  margin-bottom: 4px;
+}
+
+.processing-copy p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.processing-spinner {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: processing-spin 800ms linear infinite;
+}
+
+@keyframes processing-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 560px) {
+  .processing-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

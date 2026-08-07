@@ -232,8 +232,51 @@ function applyCleanupPreset(presetName) {
 
 loadCleanupPreferences();
 
+function showProcessing(title, message) {
+  processingTitle.textContent = title;
+  processingMessage.textContent = message;
+  processingCard.classList.remove("hidden");
+}
+
+function hideProcessing() {
+  processingCard.classList.add("hidden");
+}
+
+function setBusy(isBusy) {
+  browseButton.disabled = isBusy;
+  cleanButton.disabled = isBusy;
+  downloadButton.disabled = isBusy;
+  exportReportButton.disabled = isBusy;
+}
+
+function resetApp() {
+  sourceFile = null;
+  originalRows = [];
+  cleanedRows = [];
+  cleanedCsv = "";
+  qualityReport = null;
+
+  fileInput.value = "";
+  fileSummary.classList.add("hidden");
+  qualityCard.classList.add("hidden");
+  controlsCard.classList.add("hidden");
+  resultsCard.classList.add("hidden");
+  hideProcessing();
+  clearError();
+  dropZone.classList.remove("hidden");
+  setBusy(false);
+}
+
 async function loadFile(file) {
   clearError();
+  setBusy(true);
+
+  showProcessing(
+    "Reading file",
+    "Loading the CSV from your device."
+  );
+
+  await new Promise((resolve) => setTimeout(resolve, 0));
 
   if (!file.name.toLowerCase().endsWith(".csv")) {
     showError("Please choose a .csv file.");
@@ -247,6 +290,14 @@ async function loadFile(file) {
 
   try {
     const text = await file.text();
+
+    showProcessing(
+      "Analyzing structure",
+      "Detecting the delimiter and parsing rows."
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
     const delimiter = detectDelimiter(text);
     detectedDelimiter = delimiter;
     const rows = parseCsv(text, delimiter);
@@ -275,6 +326,13 @@ async function loadFile(file) {
     document.getElementById("delimiterMeta").textContent =
       `Delimiter: ${delimiterNames[delimiter] || delimiter}`;
 
+    showProcessing(
+      "Analyzing data quality",
+      `Reviewing ${Math.max(rows.length - 1, 0).toLocaleString()} rows.`
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
     updateQualityReport(rows);
     renderColumnControls(rows[0]);
 
@@ -283,7 +341,12 @@ async function loadFile(file) {
     qualityCard.classList.remove("hidden");
     controlsCard.classList.remove("hidden");
     resultsCard.classList.add("hidden");
+
+    hideProcessing();
+    setBusy(false);
   } catch (error) {
+    hideProcessing();
+    setBusy(false);
     showError(error.message || "We could not read this CSV file.");
   }
 }
@@ -511,17 +574,29 @@ function getColumnControls() {
   return controls;
 }
 
-function cleanCsv() {
+async function cleanCsv() {
   clearError();
+  const processingStartedAt = performance.now();
 
   if (!originalRows.length) {
     showError("Choose a CSV file first.");
     return;
   }
 
+  setBusy(true);
+
+  showProcessing(
+    "Cleaning data",
+    `Applying cleanup rules to ${Math.max(originalRows.length - 1, 0).toLocaleString()} rows.`
+  );
+
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
   const columnControls = getColumnControls();
 
   if (!columnControls) {
+    hideProcessing();
+    setBusy(false);
     return;
   }
 
@@ -727,6 +802,10 @@ function cleanCsv() {
     ? presetLabels[activePresetButton.dataset.preset]
     : "Custom rules";
 
+  const processingElapsedMs = Math.round(
+    performance.now() - processingStartedAt
+  );
+
   const processingSummaryText = document.getElementById(
     "processingSummaryText"
   );
@@ -736,7 +815,8 @@ function cleanCsv() {
       `${delimiterLabels[detectedDelimiter] || detectedDelimiter} delimiter · ` +
       `${presetLabel} · ${enabledRuleCount} cleanup rules · ` +
       `${originalSummary.dataRows} × ${originalSummary.columns} to ` +
-      `${cleanedDataRowCount} × ${cleanedColumnCount}`;
+      `${cleanedDataRowCount} × ${cleanedColumnCount} · ` +
+      `processed in ${processingElapsedMs} ms`;
   }
 
   document.getElementById("rowsRemoved").textContent = totalRowsRemoved.toLocaleString();
@@ -746,7 +826,18 @@ function cleanCsv() {
   document.getElementById("previewCaption").textContent =
     `Showing ${Math.min(cleanedDataRowCount, 10)} of ${cleanedDataRowCount.toLocaleString()} rows`;
 
+  showProcessing(
+    "Preparing results",
+    "Building the preview and download files."
+  );
+
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
   renderPreview(rows);
+
+  hideProcessing();
+  setBusy(false);
+
   resultsCard.classList.remove("hidden");
   resultsCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }

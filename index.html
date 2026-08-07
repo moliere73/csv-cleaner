@@ -42,6 +42,22 @@
         <p class="file-limit">Recommended maximum: 10 MB</p>
       </div>
 
+      <div class="processing-card hidden" id="processingCard" aria-live="polite">
+        <div class="processing-spinner" aria-hidden="true"></div>
+
+        <div class="processing-copy">
+          <p class="eyebrow">Processing</p>
+          <h2 id="processingTitle">Reading file</h2>
+          <p id="processingMessage">
+            Preparing your CSV for analysis.
+          </p>
+        </div>
+
+        <button class="text-button" id="cancelProcessingButton" type="button">
+          Start over
+        </button>
+      </div>
+
       <div class="file-summary hidden" id="fileSummary">
         <div>
           <p class="summary-label">Current file</p>
